@@ -1,0 +1,25 @@
+{
+  "name": "@hoyomi/crawler",
+  "version": "0.0.1",
+  "description": "A lightweight, composable conversion toolkit for extracting structured and type-safe data from raw HTML documents.",
+  "module": "index.js",
+  "types": "index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "rm -f index.d.ts && rm -f index.js && bun build index.ts --outfile=index.js -e dayjs -e cheerio -e chrono-node && tsup index.ts --dts-resolve --dts-only -d ./ --format esm",
+    "release": "bumpp && bun run build && bun publish"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "bumpp": "^10.2.0",
+    "tsup": "^8.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "cheerio": "^1.1.2",
+    "chrono-node": "^2.8.3",
+    "dayjs": "^1.11.13"
+  }
+}
