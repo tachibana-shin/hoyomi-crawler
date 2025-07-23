@@ -26,7 +26,6 @@ export function createConverter<T>(
 
 export const types = {
   str: createConverter((input: string) => input, "text"),
-
   bool: createConverter(
     (input: string) =>
       !!input &&
@@ -35,19 +34,12 @@ export const types = {
       input.toLowerCase() !== "null" &&
       input.toLowerCase() !== "undefined"
   ),
-
   int: createConverter((input: string) => parseInt(input, 10)),
-
   float: createConverter((input: string) => parseFloat(input)),
-
   buffer: createConverter((input: string) => new TextEncoder().encode(input)),
-
   json: createConverter((input: string) => JSON.parse(input)),
-
   date: createConverter((input: string) => new Date(input)),
-
   "str?": createConverter((input: string) => input || undefined, "text"),
-
   "bool?": createConverter((input: string) =>
     input === ""
       ? undefined
@@ -57,23 +49,18 @@ export const types = {
         input.toLowerCase() !== "null" &&
         input.toLowerCase() !== "undefined"
   ),
-
   "int?": createConverter((input: string) =>
     input ? parseInt(input, 10) : undefined
   ),
-
   "float?": createConverter((input: string) =>
     input ? parseFloat(input) : undefined
   ),
-
   "buffer?": createConverter((input: string) =>
     input ? new TextEncoder().encode(input) : undefined
   ),
-
   "json?": createConverter((input: string) =>
     input ? JSON.parse(input) : undefined
   ),
-
   "date?": createConverter((input: string) =>
     input ? new Date(input) : undefined
   ),
@@ -98,7 +85,7 @@ export const types = {
 
   custom: createConverter
 } as const
-export function type(name: keyof typeof types) {
+export function type<T extends keyof typeof types>(name: T): (typeof types)[T] {
   return types[name]
 }
 
@@ -140,8 +127,29 @@ export class Crawler {
 
   constructor(public $: CheerioAPI) {}
 
+  getAll<T = string>(
+    selector:
+      | string
+      | Element
+      | Cheerio<Element>
+      | (($: CheerioAPI) => Cheerio<Element>),
+    {
+      convert,
+      method: converterMethod
+    }: Converter<T> = types.str as Converter<T>,
+    method: Method = converterMethod ?? "text"
+  ): T[] {
+    return this.$(typeof selector === "function" ? selector(this.$) : selector)
+      .map((_, el) => this.get(el, { convert, method }))
+      .get()
+  }
+
   get<T = string>(
-    selector: string | Element | Cheerio<Element> | (($: CheerioAPI) => Cheerio<Element>),
+    selector:
+      | string
+      | Element
+      | Cheerio<Element>
+      | (($: CheerioAPI) => Cheerio<Element>),
     {
       convert,
       method: converterMethod
