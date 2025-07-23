@@ -11,12 +11,12 @@ export type Method =
   | `.${string}` /* data alias */
 export type Converter<T> = {
   convert: (input: string) => T
-  method?: Method
+  method?: Method | Method[]
 }
 
 export function createConverter<T>(
   fn: (input: string) => T,
-  method: Method = "text"
+  method: Method | Method[] = "text"
 ): Converter<T> {
   return {
     convert: fn,
@@ -83,6 +83,9 @@ export const types = {
         .join("/")
     }, ":href"),
 
+  src: createConverter((input) => input, [".src", ":src"]),
+  "src?": createConverter((input) => input || undefined, [".src", ":src"]),
+
   custom: createConverter
 } as const
 export function type<T extends keyof typeof types>(name: T): (typeof types)[T] {
@@ -137,7 +140,7 @@ export class Crawler {
       convert,
       method: converterMethod
     }: Converter<T> = types.str as Converter<T>,
-    method: Method = converterMethod ?? "text"
+    method: Method | Method[] = converterMethod ?? "text"
   ): T[] {
     return this.$(typeof selector === "function" ? selector(this.$) : selector)
       .map((_, el) => this.get(el, { convert, method }))
@@ -154,7 +157,7 @@ export class Crawler {
       convert,
       method: converterMethod
     }: Converter<T> = types.str as Converter<T>,
-    method: Method = converterMethod ?? "text"
+    methods: Method | Method[] = converterMethod ?? "text"
   ): T {
     const element =
       typeof selector === "function" ? selector(this.$) : this.$(selector)
@@ -162,29 +165,38 @@ export class Crawler {
       throw new Error(`Element not found for selector: ${selector}`)
     }
 
-    if (method.startsWith(":")) method = `attr-${method.slice(1)}`
-    else if (method.startsWith(".")) method = `data-${method.slice(1)}`
+    if (typeof methods === "string") methods = [methods]
 
-    const [fnName, ...param] = method.split("-") as [
-      "text" | "html" | "attr" | "data",
-      string?
-    ]
-    let text = ""
-    switch (fnName) {
-      case "text":
-        text = element.text()
-        break
-      case "html":
-        text = element.html() ?? ""
-        break
-      case "attr":
-        text = element.attr(param.join("-"))?.toString() ?? ""
-        break
-      case "data":
-        text = (element.data(param.join("-")) as string)?.toString() ?? ""
-        break
+    let finalText = ""
+    for (let i = 0; i < methods.length; i++) {
+      let method = methods[i]!
+      if (method.startsWith(":")) method = `attr-${method.slice(1)}`
+      else if (method.startsWith(".")) method = `data-${method.slice(1)}`
+
+      const [fnName, ...param] = method.split("-") as [
+        "text" | "html" | "attr" | "data",
+        string?
+      ]
+
+      switch (fnName) {
+        case "text":
+          finalText = element.text()
+          break
+        case "html":
+          finalText = element.html() ?? ""
+          break
+        case "attr":
+          finalText = element.attr(param.join("-"))?.toString() ?? ""
+          break
+        case "data":
+          finalText =
+            (element.data(param.join("-")) as string)?.toString() ?? ""
+          break
+      }
+
+      if (finalText) break // 最初の非空の値を使う
     }
 
-    return convert(text)
+    return convert(finalText)
   }
 }
