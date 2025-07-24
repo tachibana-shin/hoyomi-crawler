@@ -1,5 +1,6 @@
 // biome-ignore assist/source/organizeImports: <false>
 import { load, type Cheerio, type CheerioAPI } from "cheerio"
+import { isCheerio } from "cheerio/utils"
 import type { Element } from "domhandler"
 
 export type Method =
@@ -160,15 +161,17 @@ export class Crawler {
     methods: Method | Method[] = converterMethod ?? "text"
   ): T {
     const element =
-      typeof selector === "function" ? selector(this.$) : this.$(selector)
-    if (element.length === 0) {
-      throw new Error(`Element not found for selector: ${selector}`)
-    }
+      typeof selector === "function"
+        ? selector(this.$)
+        : isCheerio(selector)
+        ? selector
+        : this.$(selector)
 
     if (typeof methods === "string") methods = [methods]
 
     let finalText = ""
     for (let i = 0; i < methods.length; i++) {
+      // biome-ignore lint/style/noNonNullAssertion: <false>
       let method = methods[i]!
       if (method.startsWith(":")) method = `attr-${method.slice(1)}`
       else if (method.startsWith(".")) method = `data-${method.slice(1)}`
