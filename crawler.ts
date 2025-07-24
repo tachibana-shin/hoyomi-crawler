@@ -197,6 +197,8 @@ export class Crawler {
           break
       }
 
+      finalText = finalText.trim()
+
       if (finalText) break // 最初の非空の値を使う
     }
 
