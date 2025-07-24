@@ -103,7 +103,7 @@ export class Crawler {
     init?: RequestInit & { query?: Record<string, string | string[]> }
   ): Promise<Crawler> {
     if ((typeof input === "string" || input instanceof URL) && init?.query) {
-      const url = new URL(input.toString())
+      const url = new URL(input.toString(), "http://localhost:8000")
 
       for (const [key, value] of Object.entries(init.query)) {
         if (Array.isArray(value)) {
@@ -113,7 +113,10 @@ export class Crawler {
         }
       }
 
-      input = url.toString()
+      input = input.toString()
+      input = input.includes("?")
+        ? `${input}&${url.searchParams}`
+        : `${input}?${url.searchParams}`
     }
 
     const data = await Crawler.fetch(input, init).then(async (res) =>
